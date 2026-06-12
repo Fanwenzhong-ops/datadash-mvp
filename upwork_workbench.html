@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upwork Job Workbench</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0f1117; --card: #1a1d2a; --border: #2a2e40;
+    --text: #eaecf3; --muted: #8b8fa8; --accent: #5b7fff;
+    --green: #00c48c; --red: #ff5c5c; --orange: #ffa26b;
+    --radius: 10px;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); padding: 24px;
+    max-width: 1100px; margin: 0 auto; line-height: 1.5;
+  }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+  .tabs { display: flex; gap: 2px; margin-bottom: 20px; background: var(--card); border-radius: var(--radius); padding: 4px; }
+  .tab { padding: 10px 24px; border: none; background: transparent; color: var(--muted); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; transition: 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--accent); color: #fff; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .search-grid { display: grid; gap: 12px; }
+  .search-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; transition: 0.2s; }
+  .search-card:hover { border-color: var(--accent); }
+  .search-card a { color: var(--accent); text-decoration: none; font-size: 15px; font-weight: 600; display: block; margin-bottom: 4px; }
+  .search-card a:hover { text-decoration: underline; }
+  .search-card .hint { color: var(--muted); font-size: 12px; }
+
+  .proposal-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; white-space: pre-wrap; font-size: 14px; line-height: 1.7; position: relative; }
+  .copy-btn { position: absolute; top: 12px; right: 12px; background: var(--accent); color: #fff; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit; }
+  .copy-btn:hover { opacity: 0.9; }
+  .copy-btn.copied { background: var(--green); }
+
+  .job-log th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .job-log td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .job-log tr:hover td { background: rgba(91,127,255,0.05); }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .status.sent { background: rgba(91,127,255,0.15); color: var(--accent); }
+  .status.replied { background: rgba(0,196,140,0.15); color: var(--green); }
+  .status.hired { background: rgba(0,196,140,0.3); color: #fff; }
+  .status.rejected { background: rgba(255,92,92,0.15); color: var(--red); }
+
+  .filter-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: var(--muted); cursor: pointer; font-family: inherit; transition: 0.2s; }
+  .filter-item:hover { border-color: var(--accent); color: var(--text); }
+  .filter-item.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .tip { background: rgba(91,127,255,0.08); border: 1px solid rgba(91,127,255,0.2); border-radius: var(--radius); padding: 14px 18px; font-size: 13px; margin-bottom: 16px; }
+  .tip strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>🎯 Upwork Job Workbench</h1>
+<p class="subtitle">One-click job search · Proposal generator · Application tracker</p>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="search">🔍 搜索工作</button>
+  <button class="tab" data-tab="proposal">✍️ 提案生成</button>
+  <button class="tab" data-tab="tracker">📊 投递追踪</button>
+  <button class="tab" data-tab="tips">💡 实战技巧</button>
+</div>
+
+<!-- ==================== SEARCH PANEL ==================== -->
+<div class="panel active" id="panel-search">
+  <div class="tip">
+    <strong>⚡ 速投策略：</strong> 只投 <strong>24小时内</strong> 发布、&lt;10个提案、$50+预算、新客户的项目。点击链接直接跳转 Upwork。
+  </div>
+
+  <div class="filter-row">
+    <span style="color:var(--muted);align-self:center;font-size:13px;">快捷过滤：</span>
+    <span class="filter-item on">Fixed Price</span>
+    <span class="filter-item on">$50+</span>
+    <span class="filter-item on">Entry/Intermediate</span>
+  </div>
+
+  <div class="search-grid" id="searchLinks"></div>
+</div>
+
+<!-- ==================== PROPOSAL PANEL ==================== -->
+<div class="panel" id="panel-proposal">
+  <p style="color:var(--muted);margin-bottom:16px;">输入项目关键词，自动生成定制 proposal。复制后粘贴到 Upwork。</p>
+
+  <div style="margin-bottom:12px;">
+    <input type="text" id="jobTitle" placeholder="Job title (e.g. Build a crypto dashboard)"
+           style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;">
+  </div>
+  <div style="margin-bottom:16px;">
+    <textarea id="jobDesc" placeholder="Paste job description here..."
+              style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;height:120px;resize:vertical;"></textarea>
+  </div>
+  <button onclick="generateProposal()" style="background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;">
+    ✨ Generate Proposal
+  </button>
+  <div id="proposalOutput" style="margin-top:16px;"></div>
+</div>
+
+<!-- ==================== TRACKER PANEL ==================== -->
+<div class="panel" id="panel-tracker">
+  <p style="color:var(--muted);margin-bottom:16px;">记录你投过的每一个项目，跟踪进度。</p>
+  <div style="margin-bottom:12px;display:flex;gap:8px;">
+    <input type="text" id="trackTitle" placeholder="Job title" style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;">
+    <input type="text" id="trackBudget" placeholder="Budget" style="width:120px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;">
+    <select id="trackStatus" style="width:110px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;">
+      <option value="sent">📤 Sent</option>
+      <option value="replied">💬 Replied</option>
+      <option value="hired">✅ Hired</option>
+      <option value="rejected">❌ Rejected</option>
+    </select>
+    <button onclick="addJobLog()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;">Add</button>
+  </div>
+  <table class="job-log" style="width:100%;">
+    <thead><tr><th>Date</th><th>Job Title</th><th>Budget</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="jobLogBody"></tbody>
+  </table>
+</div>
+
+<!-- ==================== TIPS PANEL ==================== -->
+<div class="panel" id="panel-tips">
+  <div class="search-card" style="margin-bottom:12px;">
+    <h3 style="font-size:15px;margin-bottom:8px;">🎯 投递优先级</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8;">
+      1️⃣ 新客户（0-9 hires）— 愿意给新人机会<br>
+      2️⃣ 小额固定价（$50-500）— 决策快<br>
+      3️⃣ 描述详细 — 说明他们知道自己要什么<br>
+      4️⃣ &lt;10 提案 — 别去红海竞争<br>
+      5️⃣ 24小时内发布 — 越早越好
+    </div>
+  </div>
+
+  <div class="search-card" style="margin-bottom:12px;">
+    <h3 style="font-size:15px;margin-bottom:8px;">🚫 坚决避开</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8;">
+      ❌ 描述只有一句话的（"I need a dashboard"）<br>
+      ❌ 50+ 提案的项目<br>
+      ❌ $10 做个完整网站的<br>
+      ❌ 要求站外沟通（WhatsApp/Skype）的<br>
+      ❌ 让你先干活的
+    </div>
+  </div>
+
+  <div class="search-card" style="margin-bottom:12px;">
+    <h3 style="font-size:15px;margin-bottom:8px;">⏰ 最佳投递时间（北京时间）</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8;">
+      🌅 早 8:00-9:00 — 美国西部刚下班，新项目多<br>
+      🌤️ 午 12:00-13:00 — 美国东部早上，客户开始工作<br>
+      🌙 晚 20:00-23:00 — 美国工作时间，回复率最高
+    </div>
+  </div>
+
+  <div class="search-card">
+    <h3 style="font-size:15px;margin-bottom:8px;">💰 定价路线图</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8;">
+      📍 前 5 单：$25-35/h 或 $100-300 固定价 → 攒好评<br>
+      📍 5-10 单后：$45-60/h → 开始挣钱<br>
+      📍 15+ 单后：$65-100/h → 筛选客户，挑优质项目
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== Tabs ====================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ==================== Search Links ====================
+const searches = [
+  { name: 'Data Visualization + Dashboard', url: 'https://www.upwork.com/nx/jobs/search/?q=data+visualization+dashboard+chart&sort=recency&nbs=1', hint: 'Primary search — interactive charts, dashboards, analytics' },
+  { name: 'API Integration + Frontend', url: 'https://www.upwork.com/nx/jobs/search/?q=API+integration+frontend+React+data&sort=recency&nbs=1', hint: 'REST APIs, data fetching, frontend integration' },
+  { name: 'Chart.js / D3.js Projects', url: 'https://www.upwork.com/nx/jobs/search/?q=Chart.js+D3.js+data+visualization&sort=recency&nbs=1', hint: 'Specific library requests' },
+  { name: 'Crypto / Finance Dashboard', url: 'https://www.upwork.com/nx/jobs/search/?q=crypto+finance+dashboard+real-time+trading&sort=recency&nbs=1', hint: 'Your demo is strongest here' },
+  { name: 'Admin Panel / Analytics Dashboard', url: 'https://www.upwork.com/nx/jobs/search/?q=admin+panel+dashboard+analytics+metrics&sort=recency&nbs=1', hint: 'B2B SaaS dashboards' },
+  { name: 'Real-time Data Feed', url: 'https://www.upwork.com/nx/jobs/search/?q=real-time+data+feed+websocket+dashboard&sort=recency&nbs=1', hint: 'Live data, WebSocket, streaming' },
+  { name: 'React Dashboard Component', url: 'https://www.upwork.com/nx/jobs/search/?q=React+dashboard+component+data+display&sort=recency&nbs=1', hint: 'React-specific dashboard work' },
+  { name: 'PostgreSQL + Data Visualization', url: 'https://www.upwork.com/nx/jobs/search/?q=PostgreSQL+data+visualization+report+SQL&sort=recency&nbs=1', hint: 'Database + visualization combo' },
+];
+
+const searchLinksEl = document.getElementById('searchLinks');
+searches.forEach(s => {
+  searchLinksEl.innerHTML += `
+    <div class="search-card">
+      <a href="${s.url}" target="_blank">${s.name} →</a>
+      <span class="hint">${s.hint}</span>
+    </div>`;
+});
+
+// ==================== Proposal Generator ====================
+const DEMO = 'https://9d3a10e4fbf34d52b55590d0f6e97950.app.codebuddy.work';
+const GITHUB = 'https://github.com/Fanwenzhong-ops/datadash-mvp';
+
+function generateProposal() {
+  const title = document.getElementById('jobTitle').value.trim();
+  const desc = document.getElementById('jobDesc').value.trim();
+  const output = document.getElementById('proposalOutput');
+
+  if (!title) { output.innerHTML = '<p style="color:var(--red);">Please enter a job title.</p>'; return; }
+
+  // Detect project type
+  let hook = '';
+  let approach = '';
+
+  if (/dashboard|chart|visualization/i.test(title + desc)) {
+    hook = `I noticed you're looking to build a data dashboard.`;
+    approach = `1. Understand your data sources and key metrics\n2. Design a clean, responsive interface with interactive charts\n3. Implement real-time updates if needed, with focus on performance`;
+  } else if (/api|integration|data feed/i.test(title + desc)) {
+    hook = `I have extensive experience building and integrating data APIs.`;
+    approach = `1. Review your existing API documentation or data sources\n2. Build robust integration with error handling and caching\n3. Display the data in a clean, well-organized frontend`;
+  } else if (/crypto|finance|trading/i.test(title + desc)) {
+    hook = `Your crypto/finance project caught my eye — I've built in this space.`;
+    approach = `1. Set up real-time data feeds from exchange APIs\n2. Build interactive price charts with multiple timeframes\n3. Add market analytics and alerting features`;
+  } else {
+    hook = `I took a close look at your project requirements.`;
+    approach = `1. First understand your data flow and user requirements\n2. Design an intuitive UI that makes complex data accessible\n3. Deliver clean, maintainable code with proper documentation`;
+  }
+
+  if (/real-time|live|streaming/i.test(title + desc)) {
+    hook = hook.replace('.', ' with real-time data capabilities.');
+    approach += '\n4. Implement WebSocket/SSE for live data streaming';
+  }
+
+  const proposal = `Hi,
+
+${hook}
+
+I recently built DataDash — a real-time cryptocurrency market dashboard that fetches live data from REST APIs and renders interactive Chart.js charts. It includes market analytics, a searchable explorer, and auto-refreshing data:
+📊 Live Demo: ${DEMO}
+📂 GitHub: ${GITHUB}
+
+For your project, I would approach it this way:
+${approach}
+
+One quick question: what's your preferred tech stack and timeline for this?
+
+Would a 15-minute call work to discuss the details? I'm available during US business hours.
+
+Best,
+Fanwenzhong-ops`;
+
+  output.innerHTML = `<div class="proposal-box">${proposal}<button class="copy-btn" onclick="copyProposal(this)">📋 Copy</button></div>`;
+}
+
+function copyProposal(btn) {
+  const text = btn.parentElement.innerText.replace('📋 Copy', '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ==================== Job Tracker ====================
+const STORAGE_KEY = 'upwork_job_log';
+
+function loadJobLog() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveJobLog(log) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+}
+
+function renderJobLog() {
+  const log = loadJobLog();
+  const tbody = document.getElementById('jobLogBody');
+  tbody.innerHTML = log.map((j, i) => `
+    <tr>
+      <td>${j.date}</td>
+      <td>${j.title}</td>
+      <td>${j.budget}</td>
+      <td><span class="status ${j.status}">${j.status}</span></td>
+      <td><button onclick="deleteJob(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;">🗑</button></td>
+    </tr>
+  `).join('');
+}
+
+function addJobLog() {
+  const title = document.getElementById('trackTitle').value.trim();
+  const budget = document.getElementById('trackBudget').value.trim();
+  const status = document.getElementById('trackStatus').value;
+  if (!title) return;
+
+  const log = loadJobLog();
+  log.unshift({
+    date: new Date().toLocaleDateString(),
+    title, budget: budget || 'N/A', status
+  });
+  saveJobLog(log);
+  renderJobLog();
+  document.getElementById('trackTitle').value = '';
+  document.getElementById('trackBudget').value = '';
+}
+
+function deleteJob(idx) {
+  const log = loadJobLog();
+  log.splice(idx, 1);
+  saveJobLog(log);
+  renderJobLog();
+}
+
+// Init
+renderJobLog();
+</script>
+
+</body>
+</html>
