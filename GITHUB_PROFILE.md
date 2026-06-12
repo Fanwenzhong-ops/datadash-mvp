@@ -20,7 +20,7 @@ I build data-driven dashboards, APIs, and web applications that turn complex dat
 
 #### 📊 Featured Project
 
-**[DataDash — Real-time Crypto Dashboard](https://github.com/YOUR_USERNAME/datadash-mvp)**
+**[DataDash — Real-time Crypto Dashboard](https://github.com/Fanwenzhong-ops/datadash-mvp)**
 > Live market data, interactive charts, and auto-refreshing dashboard built with Chart.js + CoinGecko API.
 > 
 > [🔗 Live Demo](https://9d3a10e4fbf34d52b55590d0f6e97950.app.codebuddy.work)

@@ -8,7 +8,7 @@ A professional cryptocurrency market dashboard built with vanilla JavaScript, Ch
 
 ## Live Demo
 
-**[View Live Demo →](https://9d3a10e4fbf34d52b55590d0f6e97950.app.codebuddy.work)** *(deployed via CloudStudio)*
+**[View Live Demo →](https://9d3a10e4fbf34d52b55590d0f6e97950.app.codebuddy.work)**
 
 ## Features
 
